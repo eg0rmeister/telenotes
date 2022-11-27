@@ -1,4 +1,5 @@
 import mysql.connector as connector
+import time
 
 import assets.globals as globals
 
@@ -82,18 +83,20 @@ class Notes:
       )
     )
     cur.execute(self.Command(
-        "CREATE TABLE IF NOT EXISTS ?(?, ?, ?, ?, ?);",
+        "CREATE TABLE IF NOT EXISTS ?(?, ?, ?, ?, ?, ?);",
         (
           globals.notes_table_title,
           "note_id INT PRIMARY KEY AUTO_INCREMENT",
           "user_id INT NOT NULL",
           "title VARCHAR(50)",
           "content TEXT",
+          ("update_date DATETIME "
+           "DEFAULT CURRENT_TIMESTAMP "
+           "ON UPDATE CURRENT_TIMESTAMP"),
           "FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE",
         )
       )
     )
-
 
   def GetUserId(self, name):
     """Returns id of user with given name"""
@@ -101,7 +104,9 @@ class Notes:
     cur = self.database.cursor()
     cur.execute(
       self.Command(
-        "SELECT ? FROM ? WHERE ? = %s",
+        ("SELECT ? "
+         "FROM ? "
+         "WHERE ? = %s"),
         (
           "user_id",
           globals.users_table_title,
@@ -126,7 +131,9 @@ class Notes:
     cur = self.database.cursor()
     cur.execute(
       self.Command(
-        "SELECT ? FROM ? WHERE ? = %s AND ? = %s",
+        ("SELECT ? "
+         "FROM ? "
+         "WHERE ? = %s AND ? = %s"),
         (
           "user_id",
           globals.users_table_title,
@@ -152,7 +159,8 @@ class Notes:
       return False
     cur.execute(
       self.Command(
-        "INSERT INTO ?(?, ?) VALUES (%s, %s)",
+        ("INSERT INTO ?(?, ?) "
+         "VALUES (%s, %s)"),
         (
           globals.users_table_title,
           "username",
@@ -164,6 +172,8 @@ class Notes:
         password
       )
     )
+    self.database.commit()
+    
     return True
   
   def SaveNote(self, name, title, content):
@@ -173,12 +183,13 @@ class Notes:
       with the same title already existed in database.
     """
 
-    cur=self.database.cursor()
+    cur = self.database.cursor()
     if title in self.GetUserNotes(name):
       return False
     cur.execute(
       self.Command(
-        "INSERT INTO ?(?, ?, ?) VALUES (%s, %s, %s);",
+        ("INSERT INTO ?(?, ?, ?) "
+         "VALUES (%s, %s, %s);"),
         (
           globals.notes_table_title,
           "user_id",
@@ -192,6 +203,8 @@ class Notes:
         content,
       )
     )
+    self.database.commit()
+    
     return True
 
   def RemoveNote(self, name, title):
@@ -202,9 +215,12 @@ class Notes:
     
     
     cur = self.database.cursor()
+    if self.GetNote(name, title) == None:
+      return False
     cur.execute(
       self.Command(
-        "DELETE FROM ? WHERE ? = %s AND ? = %s",
+        ("DELETE FROM ? "
+         "WHERE ? = %s AND ? = %s"),
         (
           globals.notes_table_title,
           "user_id",
@@ -216,7 +232,9 @@ class Notes:
         title,
       )
     )
-  
+    self.database.commit()
+    return True
+
   def RemoveUser(self, name, password):
     """
       Tries to remove user from database.
@@ -228,7 +246,8 @@ class Notes:
     cur = self.database.cursor()
     cur.execute(
       self.Command(
-        "DELETE FROM ? WHERE ? = %s;",
+        ("DELETE FROM ? "
+         "WHERE ? = %s;"),
         (
           globals.users_table_title,
           "user_id",
@@ -238,16 +257,24 @@ class Notes:
         self.GetUserId(name),
       )
     )
+    self.database.commit()
     return True
   
   def GetUserNotes(self, name):
-    """Returns tuple of notes of the given user."""
+    """
+      Returns dict(title: (content, update_date)) of notes of the given user.
+    """
     
     cur = self.database.cursor()
     cur.execute(
       self.Command(
-        "SELECT title, content FROM ? INNER JOIN ? USING(?) WHERE ? = %s;",
+        ("SELECT ?, ?, ? "
+         "FROM ? INNER JOIN ? USING(?) "
+         "WHERE ? = %s;"),
         (
+          "title",
+          "update_date",
+          "content",
           globals.notes_table_title,
           globals.users_table_title,
           "user_id",
@@ -258,5 +285,67 @@ class Notes:
         name,
       )
     )
-    ret = dict(cur)
+    ret = dict(((i[0], (i[1], i[2])) for i in cur))
     return ret
+  
+  def UpdateNote(self, name, title, content):
+    """
+      Updates content of a given note. Returns True if successful or False if
+      the note does not exist
+    """
+    
+    if (self.GetNote(name, title) == None):
+      return False
+    cur = self.database.cursor()
+    cur.execute(
+      self.Command(
+        ("UPDATE ? "
+         "SET ? = %s "
+         "WHERE ? = %s AND ? = %s;"),
+        (
+          globals.notes_table_title,
+          "content",
+          "user_id",
+          "title",
+        )
+      ),
+      (
+        content,
+        self.GetUserId(name),
+        title,
+      )
+    )
+
+  def GetNote(self, name, title):
+    """
+      Returns info on the given note in a tuple (update_date, cotent)
+      or None if such note is not found.
+    """
+    
+    cur = self.database.cursor()
+    cur.execute(
+      self.Command(
+        ("SELECT ?, ? "
+         "FROM ? INNER JOIN ? USING(?) "
+         "WHERE ? = %s AND ? = %s;"),
+        (
+          "update_date",
+          "content",
+          globals.notes_table_title,
+          globals.users_table_title,
+          "user_id",
+          "username",
+          "title",
+        )
+      ),
+      (
+        name,
+        title,
+      )
+    )
+    ret = tuple(cur)
+    if len(ret) == 0:
+      return None
+    return ret[0]
+    
+    
