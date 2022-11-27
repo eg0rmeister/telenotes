@@ -1,9 +1,8 @@
 with open("assets/private.txt", "r") as f:
   token = f.readline().strip()
+  database_host = f.readline().strip()
+  database_username = f.readline().strip()
   database_password = f.readline().strip()
-
-database_username = "eg0rmeister"
-database_host = "127.0.0.1"
 database_port = 3306
 database_title = "telegram_bot"
 
