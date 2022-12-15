@@ -214,7 +214,6 @@ class Notes:
       Returns True if successful or False if given note was not in database.
     """
     
-    
     cur = self.database.cursor()
     if self.GetNote(name, title) == None:
       return False
