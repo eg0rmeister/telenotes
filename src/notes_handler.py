@@ -28,16 +28,16 @@ class Notes:
 
   def __del__(self):
     """Commits changes to database and closes connection"""
-    
+
     self.database.commit()
     self.database.close()
-  
+
   def Command(self, string, args):
     """
       Returns formatted output by placing strings from args container in place
       of question marks in string
     """
-    
+
     parts = string.split("?")
     command = parts[0]
     for i in range(len(parts) - 1):
@@ -51,7 +51,7 @@ class Notes:
 
   def CreateDatabase(self, name):
     """Creates database"""
-    
+
     session = connector.connect(
       user=network_info.database_username,
       password=network_info.database_password,
@@ -59,7 +59,8 @@ class Notes:
       port=network_info.database_port,
     )
     cur = session.cursor()
-    cur.execute(self.Command("CREATE DATABASE ?", (network_info.database_title,)))
+    cur.execute(self.Command("CREATE DATABASE ?",
+                             (network_info.database_title,)))
     session.close()
     self.database = connector.connect(
       user=network_info.database_username,
@@ -71,7 +72,7 @@ class Notes:
 
   def CreateTables(self):
     """Creates required tables in the database"""
-    
+
     cur = self.database.cursor()
     cur.execute(self.Command(
         "CREATE TABLE IF NOT EXISTS ?(?, ?, ?)",
@@ -101,7 +102,7 @@ class Notes:
 
   def GetUserId(self, name):
     """Returns id of user with given name"""
-    
+
     cur = self.database.cursor()
     cur.execute(
       self.Command(
@@ -122,13 +123,13 @@ class Notes:
     if len(users) == 0:
       return 0
     return users[0][0]
-  
+
   def ExistsUser(self, name, password):
     """
       Returns true if entry with given username and password
       exists in the user table
     """
-    
+
     cur = self.database.cursor()
     cur.execute(
       self.Command(
@@ -148,13 +149,13 @@ class Notes:
       )
     )
     return len(tuple(cur)) != 0
-  
+
   def RegisterUser(self, name, password):
     """
       Tries to add user with given info to the database.
       Returns True if successful or False if user already existed in database.
     """
-    
+
     cur = self.database.cursor()
     if self.GetUserId(name) != 0:
       return False
@@ -174,9 +175,9 @@ class Notes:
       )
     )
     self.database.commit()
-    
+
     return True
-  
+
   def SaveNote(self, name, title, content):
     """
       Tries to save given note to the database.
@@ -205,7 +206,7 @@ class Notes:
       )
     )
     self.database.commit()
-    
+
     return True
 
   def RemoveNote(self, name, title):
@@ -213,9 +214,9 @@ class Notes:
       Tries to remove given note from the database.
       Returns True if successful or False if given note was not in database.
     """
-    
+
     cur = self.database.cursor()
-    if self.GetNote(name, title) == None:
+    if self.GetNote(name, title) is None:
       return False
     cur.execute(
       self.Command(
@@ -240,7 +241,7 @@ class Notes:
       Tries to remove user from database.
       Returns True if successful or False if user wwas not in the database
     """
-    
+
     if not self.ExistsUser(name, password):
       return False
     cur = self.database.cursor()
@@ -259,12 +260,12 @@ class Notes:
     )
     self.database.commit()
     return True
-  
+
   def GetUserNotes(self, name):
     """
       Returns dict(title: (content, update_date)) of notes of the given user.
     """
-    
+
     cur = self.database.cursor()
     cur.execute(
       self.Command(
@@ -287,14 +288,14 @@ class Notes:
     )
     ret = dict(((i[0], (i[1], i[2])) for i in cur))
     return ret
-  
+
   def UpdateNote(self, name, title, content):
     """
       Updates content of a given note. Returns True if successful or False if
       the note does not exist
     """
-    
-    if (self.GetNote(name, title) == None):
+
+    if (self.GetNote(name, title) is None):
       return False
     cur = self.database.cursor()
     cur.execute(
@@ -321,7 +322,7 @@ class Notes:
       Returns info on the given note in a tuple (update_date, cotent)
       or None if such note is not found.
     """
-    
+
     cur = self.database.cursor()
     cur.execute(
       self.Command(
@@ -347,5 +348,3 @@ class Notes:
     if len(ret) == 0:
       return None
     return ret[0]
-    
-    
