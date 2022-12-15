@@ -2,6 +2,7 @@ import mysql.connector as connector
 import time
 
 import assets.globals as globals
+import assets.network_info as network_info
 
 
 class Notes:
@@ -13,16 +14,16 @@ class Notes:
     """Connects to database"""
     try:
       self.database = connector.connect(
-        user=globals.database_username,
-        password=globals.database_password,
-        host=globals.database_host,
-        port=globals.database_port,
-        database=globals.database_title
+        user=network_info.database_username,
+        password=network_info.database_password,
+        host=network_info.database_host,
+        port=network_info.database_port,
+        database=network_info.database_title
       )
     except connector.ProgrammingError as e:
       print(e.errno)
       if (e.errno == globals.no_database_error_code):
-        self.CreateDatabase(globals.database_title)
+        self.CreateDatabase(network_info.database_title)
     self.CreateTables()
 
   def __del__(self):
@@ -52,20 +53,20 @@ class Notes:
     """Creates database"""
     
     session = connector.connect(
-      user=globals.database_username,
-      password=globals.database_password,
-      host=globals.database_host,
-      port=globals.database_port,
+      user=network_info.database_username,
+      password=network_info.database_password,
+      host=network_info.database_host,
+      port=network_info.database_port,
     )
     cur = session.cursor()
-    cur.execute(self.Command("CREATE DATABASE ?", (globals.database_title,)))
+    cur.execute(self.Command("CREATE DATABASE ?", (network_info.database_title,)))
     session.close()
     self.database = connector.connect(
-      user=globals.database_username,
-      password=globals.database_password,
-      host=globals.database_host,
-      port=globals.database_port,
-      database=globals.database_title
+      user=network_info.database_username,
+      password=network_info.database_password,
+      host=network_info.database_host,
+      port=network_info.database_port,
+      database=network_info.database_title
     )
 
   def CreateTables(self):

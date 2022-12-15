@@ -1,9 +1,10 @@
 import telebot
 
 import assets.globals as globals
+import assets.network_info as network_info
 import src.notes_handler as nh
 
-bot = telebot.TeleBot(globals.token, parse_mode=None)
+bot = telebot.TeleBot(network_info.token, parse_mode=None)
 
 class StateMachine:
   """Class for handling events in different states"""
